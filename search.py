@@ -4,7 +4,7 @@
 # educational purposes provided that (1) you do not distribute or publish
 # solutions, (2) you retain this notice, and (3) you provide clear
 # attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-# 
+#
 # Attribution Information: The Pacman AI projects were developed at UC Berkeley.
 # The core projects and autograders were primarily created by John DeNero
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
@@ -18,6 +18,7 @@ Pacman agents (in searchAgents.py).
 """
 
 import util
+
 
 class SearchProblem:
     """
@@ -70,7 +71,8 @@ def tinyMazeSearch(problem):
     from game import Directions
     s = Directions.SOUTH
     w = Directions.WEST
-    return  [s, s, w, s, w, w, s, w]
+    return [s, s, w, s, w, w, s, w]
+
 
 def depthFirstSearch(problem):
     """
@@ -86,18 +88,22 @@ def depthFirstSearch(problem):
     print "Is the start a goal?", problem.isGoalState(problem.getStartState())
     print "Start's successors:", problem.getSuccessors(problem.getStartState())
     """
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+
+    return graphSearch(problem, util.Stack())
+
 
 def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+
+    return graphSearch(problem, util.Queue())
+
 
 def uniformCostSearch(problem):
     """Search the node of least total cost first."""
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+
+    fringe = util.PriorityQueueWithFunction(lambda x: x.cost)
+    return graphSearch(problem, fringe)
+
 
 def nullHeuristic(state, problem=None):
     """
@@ -106,10 +112,36 @@ def nullHeuristic(state, problem=None):
     """
     return 0
 
+
 def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+
+    fringe = util.PriorityQueueWithFunction(
+        lambda x: x.cost + heuristic(x.state, problem))
+    return graphSearch(problem, fringe)
+
+
+def graphSearch(problem, fringe):
+    visited = []  # Indicates visited states
+
+    # Fringe consists of tree nodes which contains state (x and y coordinates)
+    # foregoing cost and path to the state.
+    # Strategy is hidden inside of it.
+    fringe.push(util.Node(problem.getStartState()))
+
+    while True:
+        if fringe.isEmpty():
+            return None
+
+        node = fringe.pop()
+        if problem.isGoalState(node.state):
+            return node.path
+        if node.state not in visited:
+            visited.append(node.state)
+            for successor in problem.getSuccessors(node.state):
+                newNode = util.Node(successor[0], node.path + [successor[1]],
+                                    node.cost + successor[2])
+                fringe.push(newNode)
 
 
 # Abbreviations
