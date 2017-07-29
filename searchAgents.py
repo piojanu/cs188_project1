@@ -320,7 +320,17 @@ class CornersProblem(search.SearchProblem):
     You must select a suitable state space and successor function
     """
 
-    def __init__(self, startingGameState):
+    class State:
+
+        def __init__(self, position, corners_visited=[False, False, False, False]):
+            self.position = position
+            self.corners_visited = corners_visited
+
+        def __eq__(self, other):
+            return (self.position == other.position) \
+                & (self.corners_visited == other.corners_visited)
+
+    def __init__(self, startingGameState, visualize=True):
         """
         Stores the walls, pacman's starting position and corners.
         """
@@ -331,10 +341,16 @@ class CornersProblem(search.SearchProblem):
         for corner in self.corners:
             if not startingGameState.hasFood(*corner):
                 print 'Warning: no food in corner ' + str(corner)
-        self._expanded = 0  # DO NOT CHANGE; Number of search nodes expanded
+
+        # For display purposes
+        self._visited, self._visitedlist, self._expanded = {}, [], 0  # DO NOT CHANGE
+
         # Please add any code here which you would like to use
         # in initializing the problem
         "*** YOUR CODE HERE ***"
+
+        self.visualize = visualize
+        self.cost = 1
 
     def getStartState(self):
         """
@@ -342,14 +358,27 @@ class CornersProblem(search.SearchProblem):
         space)
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+
+        return CornersProblem.State(self.startingPosition)
 
     def isGoalState(self, state):
         """
         Returns whether this search state is a goal state of the problem.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+
+        isGoal = reduce(lambda x, y: x & y, state.corners_visited)
+
+        # For display purposes only
+        if isGoal and self.visualize:
+            self._visitedlist.append(state.position)
+            import __main__
+            if '_display' in dir(__main__):
+                if 'drawExpandedCells' in dir(
+                        __main__._display):  # @UndefinedVariable
+                    __main__._display.drawExpandedCells(
+                        self._visitedlist)  # @UndefinedVariable
+        return isGoal
 
     def getSuccessors(self, state):
         """
@@ -377,7 +406,26 @@ class CornersProblem(search.SearchProblem):
 
             "*** YOUR CODE HERE ***"
 
+            x, y = state.position
+            dx, dy = Actions.directionToVector(action)
+            nextx, nexty = int(x + dx), int(y + dy)
+            if not self.walls[nextx][nexty]:
+                nextPosition = (nextx, nexty)
+                nextCorners = list(state.corners_visited)
+                if nextPosition in self.corners:
+                    nextCorners[self.corners.index(nextPosition)] = True
+
+                successors.append((
+                    CornersProblem.State(nextPosition, nextCorners),
+                    action,
+                    self.cost
+                ))
+
         self._expanded += 1  # DO NOT CHANGE
+        if state.position not in self._visited:
+            self._visited[state.position] = True
+            self._visitedlist.append(state.position)
+
         return successors
 
     def getCostOfActions(self, actions):
@@ -387,13 +435,16 @@ class CornersProblem(search.SearchProblem):
         """
         if actions is None:
             return 999999
-        x, y = self.startingPosition
+        x, y = self.getStartState().position
+        cost = 0
         for action in actions:
+            # Check figure out the next state and see whether its' legal
             dx, dy = Actions.directionToVector(action)
             x, y = int(x + dx), int(y + dy)
             if self.walls[x][y]:
                 return 999999
-        return len(actions)
+            cost += self.cost
+        return cost
 
 
 def cornersHeuristic(state, problem):
