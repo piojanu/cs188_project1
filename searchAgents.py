@@ -565,6 +565,72 @@ class AStarFoodSearchAgent(SearchAgent):
         self.searchType = FoodSearchProblem
 
 
+class RelaxedFoodSearchProblem(FoodSearchProblem):
+    """
+    A search problem associated with finding the a path that collects all of the
+    food (dots) in a RELAXED Pacman game.
+    """
+
+    def __init__(self, startingSearchState, walls):
+        self.start = startingSearchState
+        self.walls = walls
+        self.top, self.right = self.walls.height - 1, self.walls.width - 1
+
+    def getSuccessors(self, state):
+        "Returns successor states, the actions they require, and a cost of 1."
+        successors = []
+        for direction in [
+                Directions.NORTH,
+                Directions.SOUTH,
+                Directions.EAST,
+                Directions.WEST]:
+            x, y = state[0]
+            dx, dy = Actions.directionToVector(direction)
+            nextx, nexty = int(x + dx), int(y + dy)
+            if not (nextx == 0 or nextx == self.right
+                    or nexty == 0 or nexty == self.top):
+                nextFood = state[1].copy()
+                nextFood[nextx][nexty] = False
+                successors.append((((nextx, nexty), nextFood), direction, 1))
+        return successors
+
+    def getCostOfActions(self, actions):
+        """Returns the cost of a particular sequence of actions.  If those actions
+        include an illegal move, return 999999"""
+        x, y = self.getStartState()[0]
+        cost = 0
+        for action in actions:
+            # figure out the next state and see whether it's legal
+            dx, dy = Actions.directionToVector(action)
+            x, y = int(x + dx), int(y + dy)
+            if x == 0 or x == self.right \
+               or y == 0 or y == self.top:
+                return 999999
+            cost += 1
+        return cost
+
+
+def relaxedFoodHeuristic(state, problem):
+    return state[1].count()
+
+
+class AStarRelaxedFoodSearchAgent(SearchAgent):
+    "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
+
+    def __init__(self):
+        self.searchFunction = lambda prob: search.aStarSearch(
+            prob, relaxedFoodHeuristic)
+        self.searchType = RelaxedFoodSearchProblem
+
+    def getTotalCost(self, searchState, walls):
+        if self.searchFunction is None:
+            raise Exception("No search function provided for SearchAgent")
+        # Makes a new search problem
+        problem = self.searchType(searchState, walls)
+        self.actions = self.searchFunction(problem)  # Find a path
+        return problem.getCostOfActions(self.actions)
+
+
 def foodHeuristic(state, problem):
     """
     Your heuristic for the FoodSearchProblem goes here.
@@ -593,7 +659,6 @@ def foodHeuristic(state, problem):
     Subsequent calls to this heuristic can access
     problem.heuristicInfo['wallCount']
     """
-    position, foodGrid = state
     # These are the walls of the maze, as a Grid (game.py)
     walls = problem.walls
 
@@ -602,23 +667,11 @@ def foodHeuristic(state, problem):
     if problem.isGoalState(state):
         return 0
 
-    # Get not eaten food positions list
-    not_eaten_food = foodGrid.asList()
+    if not "agent" in problem.heuristicInfo:
+        problem.heuristicInfo["agent"] = AStarRelaxedFoodSearchAgent()
 
-    # Compute cost in relaxed problem
-    total_dist = 0
-    start = position
-    while len(not_eaten_food) != 0:
-        mdist = {}
-        for food in not_eaten_food:
-            mdist[food] = util.manhattanDistance(food, start)
-
-        min_food, min_dist = min(mdist.items(), key=lambda x: x[1])
-        total_dist += min_dist
-        not_eaten_food.remove(min_food)
-        start = min_food
-
-    return total_dist
+    totalCost = problem.heuristicInfo["agent"].getTotalCost(state, walls)
+    return totalCost
 
 
 class ClosestDotSearchAgent(SearchAgent):
