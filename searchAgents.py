@@ -465,7 +465,28 @@ def cornersHeuristic(state, problem):
     walls = problem.walls
 
     "*** YOUR CODE HERE ***"
-    return 0  # Default to trivial solution
+    # If all corners are visited, it's goal state
+    if problem.isGoalState(state):
+        return 0
+
+    # Delete visited corners
+    not_visited_corners = [corners[i] for i, c in
+                           enumerate(state.corners_visited) if c == False]
+
+    # Compute cost in relaxed problem
+    total_dist = 0
+    start = state.position
+    while len(not_visited_corners) != 0:
+        mdist = {}
+        for corner in not_visited_corners:
+            mdist[corner] = util.manhattanDistance(corner, start)
+
+        min_corner, min_dist = min(mdist.items(), key=lambda x: x[1])
+        total_dist += min_dist
+        not_visited_corners.remove(min_corner)
+        start = min_corner
+
+    return total_dist
 
 
 class AStarCornersAgent(SearchAgent):
