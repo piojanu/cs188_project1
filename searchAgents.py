@@ -594,8 +594,31 @@ def foodHeuristic(state, problem):
     problem.heuristicInfo['wallCount']
     """
     position, foodGrid = state
+    # These are the walls of the maze, as a Grid (game.py)
+    walls = problem.walls
+
     "*** YOUR CODE HERE ***"
-    return 0
+    # If whole food is eaten, it's goal state
+    if problem.isGoalState(state):
+        return 0
+
+    # Get not eaten food positions list
+    not_eaten_food = foodGrid.asList()
+
+    # Compute cost in relaxed problem
+    total_dist = 0
+    start = position
+    while len(not_eaten_food) != 0:
+        mdist = {}
+        for food in not_eaten_food:
+            mdist[food] = util.manhattanDistance(food, start)
+
+        min_food, min_dist = min(mdist.items(), key=lambda x: x[1])
+        total_dist += min_dist
+        not_eaten_food.remove(min_food)
+        start = min_food
+
+    return total_dist
 
 
 class ClosestDotSearchAgent(SearchAgent):
