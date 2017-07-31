@@ -595,7 +595,35 @@ def foodHeuristic(state, problem):
     """
     position, foodGrid = state
     "*** YOUR CODE HERE ***"
-    return 0
+
+    if problem.isGoalState(state):
+        return 0
+
+    # Find furthest points in each direction
+    extreme_points = {"N": (0, 0), "S": (0, 999999),
+                      "W": (999999, 0), "E": (0, 0)}
+    for food in foodGrid.asList():
+        if food[1] > extreme_points["N"][1]:
+            extreme_points["N"] = food
+        if food[1] < extreme_points["S"][1]:
+            extreme_points["S"] = food
+        if food[0] < extreme_points["W"][0]:
+            extreme_points["W"] = food
+        if food[0] > extreme_points["E"][0]:
+            extreme_points["E"] = food
+
+    total_dist = extreme_points["N"][1] - extreme_points["S"][1]
+    total_dist += extreme_points["E"][0] - extreme_points["W"][0]
+
+    horizontal = (abs(extreme_points["E"][0] - position[0]),
+                  abs(extreme_points["W"][0] - position[0]))
+    total_dist += min(horizontal)
+
+    vertical = (abs(extreme_points["N"][1] - position[1]),
+                abs(extreme_points["S"][1] - position[1]))
+    total_dist += min(vertical)
+
+    return total_dist
 
 
 class ClosestDotSearchAgent(SearchAgent):
